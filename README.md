@@ -3,7 +3,9 @@
 A collection of (primarily bash) scripts (and some C++ code) that I've developed over the years.
 These scripts are generic to linux and should work on any distro.
 
-There are scripts for:
+In the coming weeks, I'll be migrating over / splitting these scripts from the **synology-scripts** repository.
+
+[WIP] There are scripts for:
 - **extended-attributes-and-tags**: retrieving and managing extended attributes that are set from MacOS (using samba), such as custom tags and labels and user xattrs, and access them natively from within the Synology NAS.
 - **ea-file-bundle-handling**: managing files with these extended attributes without creating inconsistencies in the synology file system.
 - **linked-collections** generating and managing directories with hard linked files based on custom criteria, effectively creating collections or repositories from other (source) directories, such as music playlists or movie genres (well, that's what I use it for; your mileage may vary).
