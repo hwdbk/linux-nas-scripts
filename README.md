@@ -4,7 +4,7 @@ A collection of (primarily bash) scripts (and some C++ code) that I've developed
 These scripts are generic to linux and should work on any distribution.
 
 There are scripts for:
-- **extended-attributes-and-tags**: retrieving and managing extended attributes that are set from MacOS (using samba), such as custom tags and labels and user xattrs, and access them natively from within the Synology NAS.
+- **extended-attributes-and-tags**: retrieving and managing extended attributes that are set from MacOS (using samba), such as custom tags and labels and user xattrs, and access them natively from the linux file system.
 - **ea-file-bundle-handling**: managing files with extended attributes without creating inconsistencies in the file system. This is a legacy remnant from the Synology age where the system uses sidecar files to store extended attributes. Maintained here (for a while) because it contains special logic around deleting files with (hard)link count >1 (ties into **linked-collections**).
 - **linked-collections** generating and managing directories with hard linked files based on custom criteria, effectively creating collections or repositories from other (source) directories, such as music playlists or movie genres (well, that's what I use it for; your mileage may vary).
 - **mac-nfd-conversion**: convert file name character representation between native/normal UTF-8 and MacOSX NFD (normalization form decomposed) representation.
