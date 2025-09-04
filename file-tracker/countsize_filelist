@@ -1,31 +1,38 @@
 #!/bin/bash
 # count (sum up, add) the file sizes in the .md5/.fst files, or an md5diff output (or backupset .lst file)
 # reads from stdin or a bunch of files
+# mimicks the output of du [-h] [-c] -d 0
+while [[ $1 == -* ]] ; do
+	if [[ $1 == -- ]] ; then break; fi
+	if [[ $1 == -h ]] ; then pretty=y ; shift ; continue ; fi # use thousands separators
+	if [[ $1 == -c ]] ; then total=y ; shift ; continue ; fi  # print the grand total
+	if [[ $1 == -t ]] ; then lean=y ; shift ; continue ; fi   # terse - don't print the filenames
+	echo "$(basename "$0"): unknown option $1 - exit" >&2 ; exit 1
+done
+if [[ $# == 0 ]] ; then total=y ; lean=y ; set -- - ; fi # read from stdin and print only the total
 
-pretty=
-if [[ $1 == -h ]] ; then
-	pretty=y ; shift
-fi
-n=0
-while IFS=$'\t' read a b c d ; do
-	if [[ -z $a || $a = '#' ]] ; then continue ; fi # skip empty lines and comment lines
-	if [[ $a =~ [-+=\>*] ]] ; then
-		((n+=c)) # a line from an md5diff output - size is in $c
-	else
-		((n+=b)) # a line from mkfilelist_md5 or mkfilelist_fast - size is in $b
+t=0
+for f in "$@" ; do
+	n=0
+	while IFS=$'\t' read a b c d ; do
+		if [[ -z $a || $a = '#' ]] ; then continue ; fi # skip empty lines and comment lines
+		#if [[ $a =~ [-+=\>\.%*] ]] ; then
+		if [[ ! (${a:0:1} =~ [0-9] ) ]] ; then
+			((n+=c)) # a line from an md5diff output - size is in $c
+		else
+			((n+=b)) # a line from mkfilelist_md5 or mkfilelist_fast - size is in $b
+		fi
+	done < <(if [[ $f == - ]] ; then cat <&0 ; else cat "$f" ; fi)
+	((t+=n))
+	if [[ -z $lean ]] ; then
+		if [[ -n $pretty ]] ; then LC_ALL=en_US.UTF-8 awk '{printf("%'"'"'d", $0) }' <<< "$n" ; echo -e "\t$f"
+		else echo -e "$n\t$f" ; fi
 	fi
-done < <(if [[ $# == 0 ]] ; then cat <&0 ; else cat "$@" ; fi)
-
-if [[ -n $pretty ]] ; then
-	r=
-	for (( m=${#n}/3+1 ; m>0 ; m-- )) ; do
-		p=$((${#n}-3*m)) ; q=3
-		if (( p<0 )) ; then q=$((p+3)) ; p=0 ; fi
-		if (( q>0 )) ; then r="$r,${n:$p:$q}" ; fi
-	done
-	n=${r#,} # strip leading comma
+done
+if [[ -n $total ]] ; then
+	if [[ -n $pretty ]] ; then LC_ALL=en_US.UTF-8 awk '{printf("%'"'"'d", $0) }' <<< "$t"
+	else echo -n "$t" ; fi
+	if [[ -n $lean ]] ; then echo
+	else echo -e "\ttotal" ; fi
 fi
-
-echo $n
-
 #EOF
