@@ -1,13 +1,12 @@
 // get_attr.h
-//	code to interpret binary @SynoEAStream files and extract the xattr from the structure
+//	code to extract the xattr data from the extended attribute structure
 //      bool get_attr(const std::string& attr_name, const std::string& file, bool useHex, bool quiet, std::string& result)
 //	input:
 //	    saves the value of the xattr with key attr_name in result. use useHex = true to print output in hex (useful for binary values)
-//	    the file parameter is either the @SynoEAStream file itself of the (mother) file to which the @SynoEAStream file belongs. if the @SynoEAStream file isn't there, you'll get an error.
-//	    the script assumes that the attr_name extended attribute is present in the file. if not, you'll get an error, unless called with quiet = true.
-//	    a very efficient way of checking whether the attribute is present in the file is with:
-//	        grep -rlF <attr_name> <path> --include='*@SynoEAStream' | while read f ; do get_attr <attr_name> "$f" ; done
-//	    (look at the listtags script, which uses this mechanism)
+//	    the file parameter is the file or directory to which extended attribute belongs.
+//	    the script assumes that the attr_name extended attribute is present on the file. if not, you'll get an error, unless called with quiet = true.
+//	    a very efficient way of checking whether the attribute is present in the file is with getfattr
+//	    (look at the find_attr and listtags scripts, which uses this mechanism)
 //	output:
 //	    the code returns the value of the attribute and a result code
 //	    if the file does not contain the attribute, the script prints nothing (with quiet) or an error (without quiet)
@@ -17,6 +16,7 @@
 //	    (they are not always following each other). reverse-engineering learnt that the attribute key string is preceded by a string length byte and 10 index bytes
 //	    comprising of 4 bytes file offset to the value data, 4 bytes length of the value data and two bytes 0x00.
 
+#include <cstdint>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -93,51 +93,24 @@ static uint64_t fromhex(const std::string& str)
 	return fromhex(str.c_str(), str.length());
 }
 
+#include <sys/xattr.h>
+#define XATTR_SIZE 10000
+
 static bool get_attr(const std::string& attr, const std::string& fname, bool useHex, bool quiet, std::string& result)
 {
-	std::string file = fname;
-	if (! endsWith(file, "@SynoEAStream"))
-		file = dirname(file) + "/@eaDir/" + basename(file) + "@SynoEAStream";
-	//std::cerr << file << LF;
-	
-	std::ifstream fin(file, std::ios::in | std::ios::binary | std::ios::ate);
-    if(!fin.is_open()) {
-    	if (! quiet) std::cerr << "get_attr: error opening " << file << LF;
-    	return false;
-    }
-	std::streamsize size = fin.tellg();
-	fin.seekg(0, std::ios::beg);
+     char value[XATTR_SIZE];
+     ssize_t valueLen;
+     std::string attrname=std::string("user.DosStream.") + attr + ":$DATA";
 
-	// parse the @SynoEAStream as a hex string since it is a binary file
-	std::vector<char> buffer(size);
-	if (fin.read(buffer.data(), size))
-	{
-		// convert @SynoEAStream file to hex and skip to the attribute key string
-		//std::cerr << "read " << size << " bytes from " << file << LF;
-		std::string hex = tohex(buffer.data(), size); // read the entire file in a hex string
-		char keylen = attr.length()+1;
-		std::string keyhex = tohex(&keylen, 1) + tohex(attr.data(), attr.length()) + "00"; // read the key in a hex string and append with 00, then prepend with length byte
-		//std::cerr << hex << LF << keyhex << LF;
-		size_t keyoff = hex.find(keyhex);
-		if (keyoff == std::string::npos) {
-			if (! quiet) { std::cerr << "get_attr: " << file << ": No such xattr: " << attr << LF; }
-			return false;
-		}
-		//std::cerr << "key offset is " << keyoff << LF;
-		size_t keyhdr = keyoff - 20; // the key header is 11 bytes before the key itself, i.e. 10 bytes before the key length byte
-		size_t valoff = fromhex(hex.data()+keyhdr,   8); // and consist of a 4-byte offset to the xattr value
-		size_t vallen = fromhex(hex.data()+keyhdr+8, 8); // and a 4-byte length of the xattr value
-		// (then two bytes padding + one byte strlen of the key (incl. the trailing 00) and the key string itself)
-		//std::cerr << "value at " << valoff << " with length " << vallen << LF;
-		if (useHex) {
-			result = hex.substr(valoff*2,vallen*2);
-		}
-		else {
-			result = "";
-			for (int n=0 ; n<vallen ; ++n)
-				result += static_cast<char>(fromhex(hex.substr((valoff+n)*2,2))); // convert hex to string byte (char) by byte
-		}
-	}
+             valueLen = getxattr(fname.c_str(), attrname.c_str(), value, XATTR_SIZE);
+             if (valueLen == -1) {
+		 return false;
+             } else if (!useHex) {
+                 result = value;
+             } else {
+		     result = tohex(value, valueLen-1);
+             }
+
 	return true;
 }
 
