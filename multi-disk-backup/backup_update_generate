@@ -223,6 +223,7 @@ if [[ -n $any ]] ; then # some leftover lines were logged
 	echo "See log file for list of LEFTOVER LINES. These start with a '+' (grep ^+ $log) and if they fit on a disk, copy them to an extra backupdisk_$(printf "%03d" $((n+1))).lst todo list." | tee -a "$log"
 	echo "Or, add (one or more) empty backupdisk_$(printf "%03d" $((n+1)))[...].[fst|md5] file(s) in the input set, set the disks' free space in the DS array and rerun the script." | tee -a "$log"
 	echo "The added disks don't even have to be empty. For instance, if you supply the .[md5|fst] file, the contents (if part of the same file set) will be reused/remain which can save copy time." | tee -a "$log"
+	exit 1 # exit with error
 else
 	echo "none" | tee -a "$log"
 fi
