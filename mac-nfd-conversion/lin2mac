@@ -1,5 +1,5 @@
 #!/bin/bash
-# note: this is an auto-generated script (by gen_mac2syn_syn2mac_scripts) - DO NOT EDIT
+# note: this is an auto-generated script (by gen_mac2lin_lin2mac_scripts) - DO NOT EDIT
 if (( $# == 0 )) ; then set -- /dev/stdin ; fi
 for i in "$@" ; do
 cat "$i" | sed \
@@ -348,8 +348,6 @@ cat "$i" | sed \
 	-e 's/ۀ/ۀ/g' \
 	-e 's/ۂ/ۂ/g' \
 	-e 's/ۓ/ۓ/g' \
-
-#	-e 's//:/g' \
 
 done
 #EOF

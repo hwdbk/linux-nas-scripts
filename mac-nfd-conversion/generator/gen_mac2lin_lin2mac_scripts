@@ -5,7 +5,7 @@ generate_script() {
 	exec 3<$1
 	exec 4<$2
 	echo '#!/bin/bash' > $3
-	echo '# note: this is an auto-generated script (by gen_mac2syn_syn2mac_scripts) - DO NOT EDIT' >> $3
+	echo '# note: this is an auto-generated script (by gen_mac2lin_lin2mac_scripts) - DO NOT EDIT' >> $3
 	echo 'if (( $# == 0 )) ; then set -- /dev/stdin ; fi' >> $3
 	echo 'for i in "$@" ; do' >> $3
 	echo 'cat "$i" | sed \' >> $3
@@ -19,26 +19,29 @@ generate_script() {
 }
 
 # generate translation table
-iconv -f UTF-8 -t UTF-8-MAC utf-8_syn.txt > utf-8_mac.txt
-if (( $(wc -l < utf-8_mac.txt) != $(wc -l < utf-8_syn.txt) )) ; then echo "line count mismatch in utf-8_mac.txt" ; exit ; fi
+iconv -f UTF-8 -t UTF-8-MAC utf-8_linux.txt > utf-8_mac.txt
+if (( $(wc -l < utf-8_mac.txt) != $(wc -l < utf-8_linux.txt) )) ; then echo "line count mismatch in utf-8_mac.txt" >&2 ; exit 1 ; fi
 
-# extract differences
-diff utf-8_mac.txt utf-8_syn.txt | grep '^> ' | sed -e 's/^> //' > syndiffs.txt
-diff utf-8_mac.txt utf-8_syn.txt | grep '^< ' | sed -e 's/^< //' > macdiffs.txt
-if (( $(wc -l < macdiffs.txt) != $(wc -l < syndiffs.txt) )) ; then echo "line count mismatch in mac/syndiffs.txt" ; exit ; fi
+# extract the differences
+diff utf-8_mac.txt utf-8_linux.txt | grep '^> ' | sed -e 's/^> //' > lindiffs.txt
+diff utf-8_mac.txt utf-8_linux.txt | grep '^< ' | sed -e 's/^< //' > macdiffs.txt
+if (( $(wc -l < macdiffs.txt) != $(wc -l < lindiffs.txt) )) ; then echo "line count mismatch in macdiffs.txt or lindiffs.txt" >&2 ; exit 1 ; fi
 
-generate_script macdiffs.txt syndiffs.txt mac2lin ; chmod 755 mac2lin
-generate_script syndiffs.txt macdiffs.txt lin2mac ; chmod 755 lin2mac
+# generate the mac2lin and lin2mac scripts for Linux
+generate_script macdiffs.txt lindiffs.txt mac2lin ; chmod 755 mac2lin
+generate_script lindiffs.txt macdiffs.txt lin2mac ; chmod 755 lin2mac
 
 # special case on synology samba 'mac' vfs: a special-encoded '/' translates to a ':' on mac
-echo "" >> syndiffs.txt
+echo "" >> lindiffs.txt
 echo ":" >> macdiffs.txt
 # note: two other nasty exceptions are ; (as a unicode chr 903) and · which map ambiguously to ; and · with iconv
 # bottom line is that utf-8_mac.txt should not contain duplicates or the scripts will not bijective
 
-generate_script macdiffs.txt syndiffs.txt mac2syn ; chmod 755 mac2syn
-generate_script syndiffs.txt macdiffs.txt syn2mac ; chmod 755 syn2mac
+# generate the mac2syn and syn2mac scripts for Synology NAS
+generate_script macdiffs.txt lindiffs.txt mac2syn ; chmod 755 mac2syn
+generate_script lindiffs.txt macdiffs.txt syn2mac ; chmod 755 syn2mac
 
-rm utf-8_mac.txt syndiffs.txt macdiffs.txt
+# cleanup
+rm utf-8_mac.txt lindiffs.txt macdiffs.txt
 
 #EOF
