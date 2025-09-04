@@ -27,7 +27,7 @@ if [[ $1 == *.lst && -f $1 ]] ; then
 	if [[ ${opts[0]} == "dryrun" ]] ; then dryrun=y ; fi
 	#echo "$bdl#$bupdir#$wrkdir#$name#$dn#$dsk#${opts[@]}#" ; exit # debug print parameter setup
 else
-	echo "usage: $0 [pwdfile] backupsetname_disknum.lst [ mountonly | dryrun | md5 [prev_md5_file.md5 ] | noscan ]" >&2
+	echo "usage: $(basename "$0") [pwdfile] backupsetname_disknum.lst [ mountonly | dryrun | md5 [prev_md5_file.md5 ] | noscan ]" >&2
 	echo "this script will process the .lst 'todo' recipe for a given backup set disk. it will 'pull' the files" >&2
 	echo "and write them on a local mounted file system (this is because files also can be deleted/moved/renamed)" >&2
 	echo "which is tricky to do through rsync alone." >&2
@@ -145,7 +145,7 @@ else
 fi
 df -B 1 "$bupdir/$dsk" | tee -a "$log" # log how much space was deleted / will be reused
 
-echo "Copying modified and new files to $dsk" | tee -a "$log"
+# copying modified and new files to $dsk
 # copy files with rsync - using rsync also makes it possible to resume copying after the process got aborted
 # note: with --files-from, the -r (--recursive) from -a is not implied (see man page), so if the input list contains directories, only the directory is copied, not its contents (that's how it should be in this case)
 # note: the --delete-before option doesn't seem to work to clean up any rogue files before copying because it works off an explicit input list - it only copies new and modified files
@@ -161,9 +161,11 @@ if [[ -n $pwdfile ]] ; then
 	rsyncopts+=(--password-file="$pwdfile")
 fi
 flist=$(mktemp)
+echo "Copying modified files to $dsk" | tee -a "$log"
 grep -P '^\*' "$bdl" | cut -f 8 > $flist # first copy the modified files
 #rsync ${rsyncopts[@]} --files-from="$flist" --relative --dirs / "$bupdir/$dsk" 2>> "$err" | tee -a "$log" # use rsync to copy from and to local filesystem
 rsync ${rsyncopts[@]} -W -e ssh --files-from="$flist" --relative --dirs --copy-dirlinks --inplace "$srcdir" "$bupdir/$dsk" 2>> "$err" | tee -a "$log" # use rsync to read files from remote server and store on local file system
+echo "Copying new files to $dsk" | tee -a "$log"
 grep -P '^\+' "$bdl" | cut -f 5 > $flist # then copy the new files
 #rsync ${rsyncopts[@]} --files-from="$flist" --relative --dirs / "$bupdir/$dsk" 2>> "$err" | tee -a "$log" # use rsync to copy from and to local filesystem
 rsync ${rsyncopts[@]} -W -e ssh --files-from="$flist" --relative --dirs --copy-dirlinks --inplace "$srcdir" "$bupdir/$dsk" 2>> "$err" | tee -a "$log" # use rsync to read files from remote server and store on local file system
@@ -181,17 +183,18 @@ else
 		echo "Skipping verification of $bupdir/$dsk to .fst or .md5 (noscan)" | tee -a "$log"
 	elif [[ ${opts[0]} == md5 ]] ; then
 		# create an .md5 file listing
-		if [[ -z ${opts[1]} ]] ; then
-			# full md5 scan
+		prev=${opts[1]}
+		if [[ -z $prev && -f "$md5" ]] ; then # md5 exists - reuse
+			mv "$md5" "$md5.old" ; prev="$md5.old"
+		fi
+		if [[ -z $prev ]] ; then # full md5 scan
 			echo "Verifying $dsk (save output in $md5 and $err)" | tee -a "$log"
 			( cd "$bupdir/$dsk" ; mkfilelist_md5 * > "$md5" 2>> "$err" )
-		elif [[ -f ${opts[1]} ]] ; then
-			# incremental md5 scan using previous scan
-			prev=${opts[1]}
-			# prepend current path if $prev path is not absolute, to make it absolute and work when whe're cd-ing into $bupdir/$dsk
+		elif [[ -f $prev ]] ; then # incremental md5 scan using previous scan
+			# prepend current path if $prev path is not absolute, to make it absolute and work when cd-ing into $bupdir/$dsk for mkfilelist
 			if [[ ${prev:0:1} != '/' ]] ; then prev="$(pwd)/$prev" ; fi
 			echo "Verifying $dsk (using previous scan $prev, save output in "$md5" and $err)" | tee -a "$log"
-			( cd "$bupdir/$dsk" ; mkfilelist_md5 -f $prev * > "$md5" 2>> "$err" )
+			( cd "$bupdir/$dsk" ; mkfilelist_md5 -f "$prev" * > "$md5" 2>> "$err" )
 		else
 			echo "Error: wrong parameter ${opts[1]} - skipping md5sum verification" | tee -a "$log"
 		fi
