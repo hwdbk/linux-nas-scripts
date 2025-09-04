@@ -60,7 +60,7 @@ if [[ -n $cleanupdirs ]] ; then
 	# this is a very efficient method because a) usually, there aren't that many deletes and b) only 1 pass per directory (through using -u)
 	sort -u -r $tmp | while read d ; do
 		if isemptydir_with_ea "$d" ; then
-			if [[ -z $(tag "$d") ]] ; then
+			if [[ -z $(tag -N "$d") ]] ; then
 				echo "cleanup empty directory $d"
 				if [[ -z $dryrun ]] ; then rmdir_with_ea "$d" ; fi
 			elif [[ -n $trash ]] ; then
