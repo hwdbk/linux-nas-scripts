@@ -1,0 +1,10 @@
+#!/bin/bash
+if (( $# < 2 )) ; then
+	echo "usage: $(basename "$0") attr_name path [...]" >&2
+	echo "       prints a list of files with the xattr matching the name attr_name" >&2
+	echo "       attr_name is a regexp, so passing '.*' (or 'user.') will yield all files with any (user-defined) extended attribute" >&2
+	exit 1
+fi
+attr=$1 ; shift
+getfattr -R -h -m "$attr" --absolute-names "$@" | grep '^# file: ' | sed -e 's/^# file: //'
+#EOF
