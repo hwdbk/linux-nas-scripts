@@ -8,7 +8,7 @@ for d in "$@" ; do if [[ ! -d "$d" ]] ; then echo "$0: source directory $d does 
 tmp=$(mktemp) # tmp file to collect the links so we can cleanup those that don't belong in the target dir afterwards with cleanup_links
 find "$@" -mindepth 1 -type d ! -name "@eaDir" -print | while read d ; do
 	# now check if the directory has any tags
-	tag "$d" | while read tag ; do
+	tag -lNg "$d" | while read tag ; do
 		f="$tag/$(basename "$d")~"
 		# only create a symlink if the tag directory exists (allows filtering of tags, i.e. no auto-create of tag directories)
 		if [[ -d "$dst/$tag" ]] ; then
