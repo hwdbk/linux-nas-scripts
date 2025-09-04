@@ -27,7 +27,10 @@ diff utf-8_mac.txt utf-8_syn.txt | grep '^> ' | sed -e 's/^> //' > syndiffs.txt
 diff utf-8_mac.txt utf-8_syn.txt | grep '^< ' | sed -e 's/^< //' > macdiffs.txt
 if (( $(wc -l < macdiffs.txt) != $(wc -l < syndiffs.txt) )) ; then echo "line count mismatch in mac/syndiffs.txt" ; exit ; fi
 
-# special case: the special-encoded '/' translates to a ':' on mac
+generate_script macdiffs.txt syndiffs.txt mac2lin ; chmod 755 mac2lin
+generate_script syndiffs.txt macdiffs.txt lin2mac ; chmod 755 lin2mac
+
+# special case on synology samba 'mac' vfs: a special-encoded '/' translates to a ':' on mac
 echo "" >> syndiffs.txt
 echo ":" >> macdiffs.txt
 # note: two other nasty exceptions are ; (as a unicode chr 903) and · which map ambiguously to ; and · with iconv
