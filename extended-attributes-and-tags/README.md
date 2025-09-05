@@ -10,7 +10,7 @@ https://github.com/jdberry/tag
 
 The scripts/programs provided here attempt to do the same natively from the linux side of the samba (smb:// file share) connection. A C++ (.cpp) version is available and easy to compile - a compiled C++ program is much faster than a bash script. For a (no longer maintained) bash version see in repository synology-scripts/extended-attributes-and-tags `get_attr.sh` and `tag.sh`.
 
-There are many different ways that Mac OS Finder tags can be represented on a (linux) file server. I don't have to talk about afp as the sharing protocol any more because it is depricated, not adviced any more and effectively replaced by Samba (smb). But even Samba has several options to map and store extended attributes passed over the smb:// connection. This is important as it intrinsically determines where/how the data is stored and whether the software here will work or not. The software assumes the use of the following options in the `[global]` or `[share]` section(s) in `/etc/samba/smb.conf`:
+There are many different ways that Mac OS Finder tags can be represented on a (linux) file server. I don't have to talk about afp as the sharing protocol any more because it is deprecated, not adviced any more and effectively replaced by Samba (smb). But even Samba has several options to map and store extended attributes passed over the smb:// connection. This is important as it intrinsically determines where/how the data is stored and whether the software here will work or not. The software assumes the use of the following options in the `[global]` or `[share]` section(s) in `/etc/samba/smb.conf`:
 ```
 vfs objects = catia fruit streams_xattr
 fruit:aapl = yes
