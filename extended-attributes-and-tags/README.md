@@ -10,6 +10,14 @@ https://github.com/jdberry/tag
 
 The scripts/programs provided here attempt to do the same natively from the linux side of the samba (smb:// file share) connection. A C++ (.cpp) version is available and easy to compile - a compiled C++ program is much faster than a bash script. For a (no longer maintained) bash version see in repository synology-scripts/extended-attributes-and-tags `get_attr.sh` and `tag.sh`.
 
+There are many different ways that Mac OS Finder tags can be represented on a (linux) file server. I don't have to talk about afp as the sharing protocol any more because it is depricated, not adviced any more and effectively replaced by Samba (smb). But even Samba has several options to map and store extended attributes passed over the smb:// connection. This is important as it intrinsically determines where/how the data is stored and whether the software here will work or not. The software assumes the use of the following options in the `[global]` or `[share]` section(s) in `/etc/samba/smb.conf`:
+`vfs objects = catia fruit streams_xattr
+fruit:aapl = yes
+fruit:metadata = stream
+fruit:resource = stream
+fruit:encoding = native`
+This will instruct Samba to store the extended attributes from Mac OS passed over smb:// as a stream in the file system's native extended attributes (xattr) instead of in AppleDouble sidecar files (UGH), and specifically in the `user.DosStream.com.apple.metadata:_kMDItemUserTags:$DATA` extended attribute. Note that Samba (apparently) adds some namespace prefix and `$DATA` after the attribute name that Apple uses (`com.apple.metadata:_kMDItemUserTags`).
+
 Extracting the tags works in two stages:
 - the `get_attr` (compiled `get_attr.cpp` program) retrieves the extended attribute raw data from a file's native extended attributes. This can be used for any extended attribute, even your own. Output can be in hex or plain text.
 - the `tag` (compiled `tag.cpp` program) calls `get_attr()` and interprets this raw data according to the Apple bplist data structures laid out for the `com.apple.metadata:_kMDItemUserTags` extended attribute. It prints the tags in a comma-separated list or on separate lines, with or without file name, just like jdberry's `tag` (see usage for (sup)ported options).
