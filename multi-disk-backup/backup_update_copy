@@ -5,8 +5,8 @@
 #srcdir=rsync://yourrsyncaccount@yourserver/NetBackup # use this form for rsyncd direct interaction (not ssh)
 #srcdir=yourrsyncaccount@yourserver::NetBackup # this is the alternative syntax for the rsyncd direct interaction (not ssh)
 srcdir=yourrsyncaccount@yourserver:/volume1/NetBackup # use this form for rsync over ssh (note the full path instead of the module name)
-# set bupdir: the directory where the unencrypted mounts of the backup disks will appear e.g. ($bupdir/20201118_001)
-bupdir="/volumeSATA1/satashare1-1"
+# set bupdir: the directory where the backup disks are mounted e.g. ($bupdir/20201118_001)
+bupdir="/mnt/backup"
 
 if (( $# > 0 )) && [[ $1 != *.lst ]] ; then
 	if [[ -f $1 ]] ; then pwdfile=$1 ; shift ; chmod 000 "$pwdfile" # restrict access just in case one forgot
@@ -18,7 +18,7 @@ if [[ ! -d "$bupdir" ]] ; then echo "Backup target directory $bupdir not found -
 if [[ $1 == *.lst && -f $1 ]] ; then
 	# assume backup_diskset_copy [path/]backupsetname_disknum.lst [ options ]
 	wrkdir=$(dirname "$1") ; if [[ ${wrkdir:0:1} != '/' ]] ; then wrkdir="$(pwd)/$wrkdir" ; fi ; wrkdir=${wrkdir%/.}
-	bdl="$wrkdir/$(basename "$1")" ; if [[ ! -f "$bdl" ]] ; then echo "Backup todo list $bdl not found - exit" ; exit 1 ; fi
+	bdl="$wrkdir/$(basename "$1")" ; if [[ ! -f "$bdl" ]] ; then echo "ERROR: backup todo list $bdl not found - exit" ; exit 1 ; fi
 	name=$(basename "$1" | sed -e 's/_[0-9][0-9][0-9].lst$//')
 	dn=$(basename "$1" | sed -e 's/.*_\([0-9][0-9][0-9]\).lst$/\1/' -e 's/[0]*//')
 	shift # we're done with $1
@@ -34,7 +34,7 @@ else
 	echo "note:  when mountonly or dryrun is specified, no log file is created and md5 verification is skipped" >&2
 	echo "note:  if the pwdfile is used, the files must be fetched with rsync:// over the network." >&2
 	echo "       if no pwdfile is used and files need to be fetched over the network, rsync will prompt for a password." >&2
-	echo "       or make sure you set up the ssh pre-shared public key for rsync over ssh authentication." >&2
+	echo "       or make sure you set up the ssh pre-shared public key for rsync -e ssh authentication." >&2
 	echo "       for local (filesystem) rsync, authentication is not necessary." >&2
 	echo "       the copy method is hardcoded in the copy section; examples are given to adapt to one's needs." >&2
 	exit 1
@@ -42,17 +42,9 @@ fi
 
 if [[ -d "$bupdir/$dsk" ]] ; then
 	echo "INFO: $bupdir/$dsk exists - assuming it is the backup target for $dsk and ready to go"
-	# if the target dir is already mounted, this script can also be run from the task manager (doesn't require user input for mount.ecryptfs in that case)
+	# if the target dir is already mounted, this script can also be run from a cron job (doesn't require user interaction to mount the backup disk $dsk under $bupdir)
 else
-	echo "INFO: $bupdir/$dsk not found"
-	if [[ ! -d "$bupdir/@$dsk@" ]] ; then
-		echo "WARNING: $bupdir/@$dsk@ not found - creating and mounting a new encrypted directory $bupdir/@$dsk@ for $dsk"
-		mkdir -v "$bupdir/@$dsk@"
-	fi
-	echo "Mounting $bupdir/@$dsk@ on $bupdir/$dsk"
-	mkdir "$bupdir/$dsk"
-	mount.ecryptfs "$bupdir/@$dsk@" "$bupdir/$dsk" -o rw,noauto,ecryptfs_cipher=aes,ecryptfs_key_bytes=32,ecryptfs_passthrough=n,ecryptfs_enable_filename_crypto=y
-	ls -l "$bupdir/$dsk" # confirm the mount was successful by showing the contents - will show ECRYPTFS_FNEK_ENCRYPTED.* files if the passphrase was wrong
+	echo "ERROR: backup directory $bupdir/$dsk not found - please mount before calling this script" ; exit 1
 fi
 if [[ ${opts[0]} = "mountonly" ]] ; then exit ; fi
 
@@ -150,7 +142,7 @@ df -B 1 "$bupdir/$dsk" | tee -a "$log" # log how much space was deleted / will b
 # note: with --files-from, the -r (--recursive) from -a is not implied (see man page), so if the input list contains directories, only the directory is copied, not its contents (that's how it should be in this case)
 # note: the --delete-before option doesn't seem to work to clean up any rogue files before copying because it works off an explicit input list - it only copies new and modified files
 #       (for instance, when reusing the disk a second time and reusing as many files as possible). hence the files need to be cleaned out explicitly, using the ^- wipe list from the md5diff output
-# note: --inplace makes sure rsyncd doesn't create the .filename.ext.uniquesuffix tmp files, which cause problems with long file names and the ecryptfs limit
+# note: --inplace makes sure rsyncd doesn't create the .filename.ext.uniquesuffix tmp files, which cause problems with long file names and the ecryptfs limit, if ecryptfs is used
 # note: when --files-from is used, the files are NOT processed (copied) in the order specified by the files-from file. path alphabetical order is used instead. this can lead to added files
 #       to be copied before modified files, which in turn can lead to disk space exceeded problems. so use two passes with two different sets of files-from.
 rsyncopts=(-av)
