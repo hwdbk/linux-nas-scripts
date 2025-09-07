@@ -1,5 +1,5 @@
 #!/bin/bash
-# usage: backup_update_copy [pwdfile] [path/]backupsetname_disknum.lst [ mountonly | dryrun | md5 [prev_md5_file.md5 ] ]
+# usage: backup_update_copy [pwdfile] [path/]backupsetname_disknum.lst [ dryrun | md5 [prev_md5_file.md5 ] ]
 
 # set srcdir: the rsync source, which may be a remote rsync server, or a local path. note: backup_update_copy 'pulls' the content to the backup server
 #srcdir=rsync://yourrsyncaccount@yourserver/NetBackup # use this form for rsyncd direct interaction (not ssh)
@@ -27,11 +27,11 @@ if [[ $1 == *.lst && -f $1 ]] ; then
 	if [[ ${opts[0]} == "dryrun" ]] ; then dryrun=y ; fi
 	#echo "$bdl#$bupdir#$wrkdir#$name#$dn#$dsk#${opts[@]}#" ; exit # debug print parameter setup
 else
-	echo "usage: $(basename "$0") [pwdfile] backupsetname_disknum.lst [ mountonly | dryrun | md5 [prev_md5_file.md5 ] | noscan ]" >&2
+	echo "usage: $(basename "$0") [pwdfile] backupsetname_disknum.lst [ dryrun | md5 [prev_md5_file.md5 ] | noscan ]" >&2
 	echo "this script will process the .lst 'todo' recipe for a given backup set disk. it will 'pull' the files" >&2
-	echo "and write them on a local mounted file system (this is because files also can be deleted/moved/renamed)" >&2
+	echo "and write them on a local mounted (preferably encrypted) file system (this is because files also can be deleted/moved/renamed)" >&2
 	echo "which is tricky to do through rsync alone." >&2
-	echo "note:  when mountonly or dryrun is specified, no log file is created and md5 verification is skipped" >&2
+	echo "note:  when dryrun is specified, no log file is created and md5 verification is skipped" >&2
 	echo "note:  if the pwdfile is used, the files must be fetched with rsync:// over the network." >&2
 	echo "       if no pwdfile is used and files need to be fetched over the network, rsync will prompt for a password." >&2
 	echo "       or make sure you set up the ssh pre-shared public key for rsync -e ssh authentication." >&2
@@ -46,7 +46,6 @@ if [[ -d "$bupdir/$dsk" ]] ; then
 else
 	echo "ERROR: backup directory $bupdir/$dsk not found - please mount before calling this script" ; exit 1
 fi
-if [[ ${opts[0]} = "mountonly" ]] ; then exit ; fi
 
 # output files
 log="${bdl%.lst}.log" # log file (stdout)
@@ -169,7 +168,6 @@ rm $flist
 df -B 1 "$bupdir/$dsk" | tee -a "$log" # log the final utilisation of the disk
 if [[ -n $dryrun ]] ; then
 	echo "Skipping verification of $bupdir/$dsk to .fst or .md5 (dryrun)" | tee -a "$log"
-	# and don't unmount
 else
 	if [[ ${opts[0]} == noscan ]] ; then
 		echo "Skipping verification of $bupdir/$dsk to .fst or .md5 (noscan)" | tee -a "$log"
@@ -195,9 +193,6 @@ else
 		echo "Fast scan of $dsk (save output in $fst and $err)" | tee -a "$log"
 		mkfilelist_fast "$bupdir/$dsk" | sed -e "s#\t$bupdir/$dsk/#\t#" > "$fst" 2>> "$err"
 	fi
-#	echo "Unmounting $dsk"
-#	umount "$bupdir/$dsk"
-#	rmdir "$bupdir/$dsk"
 fi
 echo "Done" | tee -a "$log"
 
