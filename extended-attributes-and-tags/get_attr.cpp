@@ -1,13 +1,10 @@
 // get_attr.cpp
-//	program to interpret binary @SynoEAStream files and extract the xattr from the structure
+//	program to interpret a binary xattr stream and extract the data
 //	input:
 //		get_attr [-x] [-q] attr_name file
 //		prints the value of the xattr with key attr_name of file. use -x to print output in hex (useful for binary values)
-//		the file parameter is either the @SynoEAStream file itself of the (mother) file to which the @SynoEAStream file belongs. if the @SynoEAStream file isn't there, you'll get an error.
 //		the script assumes that the attr_name extended attribute is present in the file. if not, you'll get an error, unless called with -q (quiet).
-//		a very efficient way of checking whether the attribute is present in the file is with:
-//			grep -rlF <attr_name> <path> --include='*@SynoEAStream' | while read f ; do get_attr <attr_name> "$f" ; done
-//		(look at the listtags script, which uses this mechanism)
+//		a very efficient way of finding files and checking whether the attribute is present in the file is used in the find_attr and listtags scripts.
 //	output:
 //		the script prints the value of the attribute
 //		if the file does not contain the attribute, the script prints nothing (with -q) or an error (without -q)
@@ -19,11 +16,6 @@
 
 int main(int argc, char** argv)
 {
-	//std::cout << argc << LF ; for(int i=0; i<argc; ++i) std::cout << argv[i] << LF;
-	//std::cout << "'" << dirname(argv[1]) << "'   '" << basename(argv[1]) << "'" << LF; return 0;
-	//int n=0x12345678 ; std::cout << tohex((const char*)&n,4) << LF ; return 0;
-	//std::cout << fromhex("400") << LF; return 0;
-	
 	bool error = false;
 
 	// process options
