@@ -6,7 +6,7 @@ dst=.
 # check parameters (make sure $@ only contains directories or find will create havoc if you pass -exec in $@ by accident)
 for d in "$@" ; do if [[ ! -d "$d" ]] ; then echo "$0: source directory $d does not exist - exiting" >&2 ; exit 1 ; fi ; done
 tmp=$(mktemp) # tmp file to collect the links so we can cleanup those that don't belong in the target dir afterwards with cleanup_links
-find "$@" -mindepth 1 -type d ! -name "@eaDir" -print | while read d ; do
+find "$@" -mindepth 1 -type d ! -name "@eaDir" -print | while read d ; do # filter out @eaDir on synology (does no harm on regular linux)
 	# now check if the directory has any tags
 	tag -lNg "$d" | while read tag ; do
 		f="$tag/$(basename "$d")~"

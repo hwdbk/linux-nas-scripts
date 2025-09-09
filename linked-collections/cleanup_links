@@ -28,7 +28,7 @@ tmp=$(mktemp) # wipe list (candidates) for directories
 tmp1=$(mktemp) ; sort -u "$lst" > $tmp1
 tmp2=$(mktemp)
 
-find "${dir[@]}" \( -type f -o -type l \) ! -path "*/@eaDir/*" -print | sort > $tmp2
+find "${dir[@]}" \( -type f -o -type l \) ! -path "*/@eaDir/*" -print | sort > $tmp2 # filter out @eaDir on synology (does no harm on regular linux)
 if [[ -n $dryrun ]] ; then
 	echo "-- [ the below should not print '<' items; the '>' items will be deleted by the algorithm"
 	diff $tmp1 $tmp2 | grep '^[<>]'

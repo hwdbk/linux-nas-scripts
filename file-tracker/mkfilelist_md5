@@ -72,7 +72,7 @@ while IFS=$'\t' read a b f ; do
 		c=$(md5sum "$f" | cut -d ' ' -f 1)
 	fi
 	if [[ -n $c ]] ; then echo -e "${a:0:25}\t$b\t$c\t$f" ; else echo "WARNING: there was an error calculating md5sum for $f" >&2 ; fi
-done < <(find "$@" \( -type f -o -type d \) "${filter[@]}" ! -path "*/@eaDir/*" ! -path "*/.AppleDB/*" ! -name ".DS_Store" -printf "%TY%Tm%Td_%TH%TM%TS\t%s\t%p\n" | sort -t $'\t' -k 3 )
+done < <(find "$@" \( -type f -o -type d \) "${filter[@]}" ! -path "*/@eaDir/*" ! -path "*/.AppleDB/*" ! -name ".DS_Store" -printf "%TY%Tm%Td_%TH%TM%TS\t%s\t%p\n" | sort -t $'\t' -k 3 ) # filter out @eaDir on synology (does no harm on regular linux)
 
 # print stats
 if [[ -n $prevmd5 ]] ; then
