@@ -20,9 +20,9 @@ for n in "$@" ; do
 	find_attr com.apple.metadata:_kMDItemUserTags "$n" | while read f ; do # filter only on files that have the _kMDItemUserTags metadata xattr
 		# note: (nested) directories with tag(s) within directories with links (marked by directory-/ e.g. path/genres-/Drama, or path/genres-/Sets/James Bond)
 		#       must not be filtered, only the files within those, i.e. skip files _within_ "Drama", "Sets" or "James Bond", not these directories themselves, which may have a useful tag.
-		# note: this is equivalent to filtering the grep output through | grep -v -- '-/.*\.[^ ]' | sed -e 's#/@eaDir/#/#' -e 's#@SynoEAStream##', but that doesn't do the -all
-		#       and is only marginally faster than the below (calling 'tag' is the bottleneck)
-		if [[ -n $all || -d $f || ( -f $f && $f != *-/* ) ]] ; then # exclude files with tag(s) found within linked directories (directories whose name end with -)
+		# note: this is equivalent to filtering the grep output through | grep -v -- '-/.*\.[^ ]', but that doesn't do the -all
+		#       and is only marginally faster than the below (calling 'tag' is the bottleneck, hence the xargs)
+		if [[ -n $all || -d $f || ( -f $f && $f != *-/* ) ]] ; then # filter files: exclude files (but not directories)  with tag(s), found within linked directories (i.e. directories whose name end with -)
 			echo -n -e "$f\0"
 		fi
 	done | xargs -0 tag -lnG # default output (-lnG) is: name\ttag1,tag2...\n
