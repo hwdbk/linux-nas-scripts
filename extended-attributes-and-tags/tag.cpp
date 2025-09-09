@@ -1,6 +1,6 @@
 // tag.cpp
 //
-// program to interpret binary @SynoEAStream files and extract the tags (labels) from the com.apple.metadata:_kMDItemUserTags bplist structure
+// program to interpret binary xattr stream and extract the tags (labels) from the com.apple.metadata:_kMDItemUserTags bplist structure
 // input:
 //	   usage: tag options file|directory
 //	   the script assumes that the com.apple.metadata:_kMDItemUserTags extended attribute is present in the file, so it is wise to grep first before calling this script
