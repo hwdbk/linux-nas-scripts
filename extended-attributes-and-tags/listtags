@@ -23,8 +23,8 @@ for n in "$@" ; do
 		# note: this is equivalent to filtering the grep output through | grep -v -- '-/.*\.[^ ]', but that doesn't do the -all
 		#       and is only marginally faster than the below (calling 'tag' is the bottleneck, hence the xargs)
 		if [[ -n $all || -d $f || ( -f $f && $f != *-/* ) ]] ; then # filter files: exclude files (but not directories)  with tag(s), found within linked directories (i.e. directories whose name end with -)
-			echo -n -e "$f\0"
+			echo "$f"
 		fi
-	done | xargs -0 tag -lnG # default output (-lnG) is: name\ttag1,tag2...\n
+	done | xargs -d '\n' tag -lnG # default output (-lnG) is: name\ttag1,tag2...\n
 done
 #EOF
