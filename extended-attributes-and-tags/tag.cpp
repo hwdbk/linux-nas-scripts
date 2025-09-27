@@ -58,15 +58,16 @@ static bool is_directory( const char *path ) {
 	return ( S_ISDIR(path_stat.st_mode) != 0 );
 }
 
-static void usage()
+static void usage(int argc, char** argv)
 {
 	std::cerr << "usage: tag [-hlnNgGtTp0] file|directory" << LF;
+//	for (int n=0 ; n<argc ; ++n) std::cerr << n << "=" << argv[n] << LF; // DEBUG
 }
 
 int main(int argc, char** argv)
 {
 	// syntax
-	if (argc == 0) { usage(); return 1; }
+	if (argc == 0) { usage(argc,argv); return 1; }
 	
 	// options (-lnGt is default if no options are given)
 	bool optList = true, optName = true, optGarrulous = false, optTags = true, optSlash = false, optNul = false;
@@ -95,10 +96,10 @@ int main(int argc, char** argv)
 			case 'T': optTags      = false; break;
 			case 'p': optSlash     = true;  break;
 			case '0': optNul       = true;  break;
-			case 'h': case '?': default: usage(); return 1;
+			case 'h': case '?': default: usage(argc,argv); return 1;
 		}
 	}
-	if (::optind >= argc) { usage(); return 1; } // no file|dir arguments were given
+	if (::optind >= argc) { usage(argc,argv); return 1; } // no file|dir arguments were given
 	for ( ; ::optind < argc; ++::optind ) { // the remaining args must be file|dir params
 		std::string file = argv[::optind];
 		// get the extended attributes binary bplist blob in hex
