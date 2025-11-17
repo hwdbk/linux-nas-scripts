@@ -12,6 +12,7 @@ The scripts/programs provided here attempt to do the same natively from the linu
 
 There are many different ways that Mac OS Finder tags can be represented on a (linux) file server. I don't have to talk about afp as the sharing protocol any more because it is deprecated, not adviced any more and effectively replaced by Samba (smb). But even Samba has several options to map and store extended attributes passed over the smb:// connection. This is important as it intrinsically determines where/how the data is stored and whether the software here will work or not. The software assumes the use of the following options in the `[global]` or `[share]` section(s) in `/etc/samba/smb.conf`:
 ```
+ea support = yes
 vfs objects = catia fruit streams_xattr
 fruit:aapl = yes
 fruit:metadata = stream
@@ -19,6 +20,10 @@ fruit:resource = stream
 fruit:encoding = native
 ```
 This will instruct Samba to store the extended attributes from Mac OS passed over smb:// as a stream in the file system's native extended attributes (xattr) instead of in AppleDouble sidecar files (UGH), and specifically in the `user.DosStream.com.apple.metadata:_kMDItemUserTags:$DATA` extended attribute. Note that Samba (apparently) adds some namespace prefix and `$DATA` after the attribute name that Apple uses (`com.apple.metadata:_kMDItemUserTags`).
+
+Synology note: note that Synology stores extended attributes fundamentally different - they use sidecar files in the @eaDir subdirectories and don't rely on extended attributes in the file system. See my synology-scripts github site to interpret and use these sidecar files.
+
+UGreen note: although UGreen's UGOS is based on Debian 12 'bookworm', their Samba implementation is still somewhat custom, uses different settings than above and has a vfs module enabled called `ug_xattr_filter` which hints at some custom mapping going on in the background - and as a result, xattrs are not stored as per standard linux samba and hence the scripts/programs published here don't (won't) work.
 
 Extracting the tags works in two stages:
 - the `get_attr` (compiled `get_attr.cpp` program) retrieves the extended attribute raw data from a file's native extended attributes. This can be used for any extended attribute, even your own. Output can be in hex or plain text.
