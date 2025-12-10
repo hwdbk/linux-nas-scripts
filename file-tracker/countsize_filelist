@@ -3,10 +3,10 @@
 # reads from stdin or a bunch of files
 # mimicks the output of du [-h] [-c] -d 0
 while [[ $1 == -* ]] ; do
-	if [[ $1 == -- ]] ; then break; fi
 	if [[ $1 == -h ]] ; then pretty=y ; shift ; continue ; fi # use thousands separators
 	if [[ $1 == -c ]] ; then total=y ; shift ; continue ; fi  # print the grand total
 	if [[ $1 == -t ]] ; then lean=y ; shift ; continue ; fi   # terse - don't print the filenames
+	if [[ $1 == -- ]] ; then break; fi # treat all remaining args as path
 	echo "$(basename "$0"): unknown option $1 - exit" >&2 ; exit 1
 done
 if [[ $# == 0 ]] ; then total=y ; lean=y ; set -- - ; fi # read from stdin and print only the total
