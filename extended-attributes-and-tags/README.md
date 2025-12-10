@@ -19,7 +19,7 @@ fruit:metadata = stream
 fruit:resource = stream
 fruit:encoding = native
 ```
-This will instruct Samba to store the extended attributes from Mac OS passed over smb:// as a stream in the file system's native extended attributes (xattr) instead of in AppleDouble sidecar files (UGH), and specifically in the `user.DosStream.com.apple.metadata:_kMDItemUserTags:$DATA` extended attribute. Note that Samba (apparently) adds some namespace prefix and `$DATA` after the attribute name that Apple uses (`com.apple.metadata:_kMDItemUserTags`).
+This will instruct Samba to store the extended attributes from Mac OS passed over smb:// as a stream in the file system's native extended attributes (xattr) instead of in AppleDouble sidecar files (UGH), and specifically in the `user.DosStream.com.apple.metadata:_kMDItemUserTags:$DATA` extended attribute. Note that Samba (apparently) adds some namespace prefix and `$DATA` after the attribute name that Apple uses (`com.apple.metadata:_kMDItemUserTags`). I also found that setting `store dos attributes = no` in `/etc/samba/smb.conf` massively improved browing speed in the Finder (as a result of no more `user.DOSATTRIB` extended attribute being stored for every file that has a `_kMDItemUserTags`). YMMV if you need DOS attributes in conjunction with Windows clients.
 
 Synology note: note that Synology stores extended attributes fundamentally different - they use sidecar files in the @eaDir subdirectories and don't rely on extended attributes in the file system. See my synology-scripts github site to interpret and use these sidecar files.
 
