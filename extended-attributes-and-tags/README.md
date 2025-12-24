@@ -10,7 +10,7 @@ https://github.com/jdberry/tag
 
 The scripts/programs provided here attempt to do the same natively from the linux side of the samba (smb:// file share) connection. A C++ (.cpp) version is available and easy to compile - a compiled C++ program is much faster than a bash script. For a (no longer maintained) bash version see in repository synology-scripts/extended-attributes-and-tags `get_attr.sh` and `tag.sh`.
 
-There are many different ways that Mac OS Finder tags can be represented on a (linux) file server. I don't have to talk about afp as the sharing protocol any more because it is deprecated, not adviced any more and effectively replaced by Samba (smb). But even Samba has several options to map and store extended attributes passed over the smb:// connection. This is important as it intrinsically determines where/how the data is stored and whether the software here will work or not. The software assumes the use of the following options in the `[global]` or `[share]` section(s) in `/etc/samba/smb.conf`:
+There are many different ways that Mac OS Finder tags can be represented on a (linux) file server. I don't have to talk about afp as the sharing protocol any more because it is deprecated, not adviced any more and effectively replaced by Samba (smb). But even Samba has several options to map and store extended attributes passed over the smb:// connection. This is important as it intrinsically determines where/how the data is stored and whether the software here will work or not. The software assumes the use of the following options in the `[global]` (or `[share]`'s) section(s) in `/etc/samba/smb.conf`. This is quite essential and the result of days of messing about, reading up and testing:
 ```
 ea support = yes
 vfs objects = catia fruit streams_xattr
@@ -19,7 +19,25 @@ fruit:metadata = stream
 fruit:resource = stream
 fruit:encoding = native
 ```
-This will instruct Samba to store the extended attributes from Mac OS passed over smb:// as a stream in the file system's native extended attributes (xattr) instead of in AppleDouble sidecar files (UGH), and specifically in the `user.DosStream.com.apple.metadata:_kMDItemUserTags:$DATA` extended attribute. Note that Samba (apparently) adds some namespace prefix and `$DATA` after the attribute name that Apple uses (`com.apple.metadata:_kMDItemUserTags`). I also found that setting `store dos attributes = no` in `/etc/samba/smb.conf` massively improved browing speed in the Finder (as a result of no more `user.DOSATTRIB` extended attribute being stored for every file that has a `_kMDItemUserTags`). YMMV if you need DOS attributes in conjunction with Windows clients.
+This will instruct Samba to store the extended attributes from Mac OS passed over smb:// as a stream in the file system's native extended attributes (xattr) instead of in AppleDouble sidecar files (UGH), and specifically in the `user.DosStream.com.apple.metadata:_kMDItemUserTags:$DATA` extended attribute. Note that Samba (apparently) adds some namespace prefix and `$DATA` after the attribute name that Apple uses (`com.apple.metadata:_kMDItemUserTags`). I also found that, in addition, setting
+```
+store dos attributes = no
+```
+in `/etc/samba/smb.conf` massively improved browing speed in the Finder (because, as a result, there are no more `user.DOSATTRIB` extended attribute being stored for every file that has a `_kMDItemUserTags`). YMMV if you need DOS attributes in conjunction with Windows clients.
+
+Other settings that you might find useful are:
+```
+mangled names = no
+```
+(although I have to admit that it crept in at some point in time and lost the will to find out if, after finding the proper configuration, this would break if omitted).
+
+For symlinks, I use:
+```
+follow symlinks = yes
+wide links = yes
+unix extensions = no
+```
+which I believe is the most useful setting as it not only follows symlinks properly when seen from MacOS (although the symlinks look like regular files, not like aliases), but also shows the extended attributes on the files and directories linked to. The only drawback is that it enables symlinking across shares, which may present a security risk to you.
 
 Synology note: note that Synology stores extended attributes fundamentally different - they use sidecar files in the @eaDir subdirectories and don't rely on extended attributes in the file system. See my synology-scripts github site to interpret and use these sidecar files.
 
