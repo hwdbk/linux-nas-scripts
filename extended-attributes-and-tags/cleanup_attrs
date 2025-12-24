@@ -1,14 +1,6 @@
 #!/bin/bash
-if [[ $# == 0 ]] ; then
-	echo "usage: $(basename "$0") [-l] [-f regex] [-x|-n] [-v] [--] path [...]" >&2
-	echo "       -l : lists the extended attributes found in path(s) except those listed in xattrs.lst" >&2
-	echo "       -f regex : filter extended attributes with regex - only matched attributes will be processed" >&2
-	echo "       -x : removes all extended attributes found in path(s) except those listed in xattrs.lst" >&2
-	echo "       -n : dry-run: lists all attributes that would be removed, on all files concerned" >&2
-	echo "       -v : verbose: lists all attributes on all files concerned (-l, -x)" >&2
-	exit 1
-fi
 while [[ $1 == -* ]] ; do
+	if [[ $1 == -h || $1 == --help ]] ; then usage=y ; shift ; continue ; fi
 	if [[ $1 == -l ]] ; then list=y ; shift ; continue ; fi
 	if [[ $1 == -f ]] ; then filter=$2 ; shift 2 ; continue ; fi
 	if [[ $1 == -x ]] ; then cleanup=y ; shift ; continue ; fi
@@ -17,9 +9,19 @@ while [[ $1 == -* ]] ; do
 	if [[ $1 == -- ]] ; then shift ; break ; fi # treat all remaining args as path
 	echo "$(basename "$0"): unknown option $1 - exit" >&2 ; exit 1
 done
+if [[ -z $list && -z $cleanup && -z $dryrun ]] ; then usage=y ; fi
 if [[ -n $dryrun ]] ; then cleanup= ; verbose= ; fi # dryrun (-n) has preference over cleanup (-x) and dryrun has its own verbose
-if [[ -n $cleanup ]] ; then msg="removing all attributes" ; else msg="scanning for attribute" ; fi
+if [[ -n $usage ]] ; then
+	echo "usage: $(basename "$0") [-l | -x | -n] [-f regex] [-v] [--] path [...]" >&2
+	echo "       -l : lists the extended attributes found in path(s) except those listed in xattrs.lst" >&2
+	echo "       -f regex : filter extended attributes with regex - only matched attributes will be processed" >&2
+	echo "       -x : removes all extended attributes found in path(s) except those listed in xattrs.lst" >&2
+	echo "       -n : dry-run: lists all attributes that would be removed, on all files concerned" >&2
+	echo "       -v : verbose: lists all attributes on all files concerned (-l, -x)" >&2
+	exit 1
+fi
 
+if [[ -n $cleanup ]] ; then msg="removing all attributes" ; else msg="scanning for attribute" ; fi
 attrlist=$(getfattr -R -m ".*" --absolute-names "$@" | grep -v '^#' | grep -v '^$' | grep -v -f xattrs.lst | grep -vF user.DosStream.AFP_AfpInfo | grep "$filter" | sort -u) # note: if $filter is empty, grep "" does not filter anything, which is exactly what we want
 if [[ -n $list ]] ; then
 	echo "$attrlist"
