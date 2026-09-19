@@ -1,35 +1,49 @@
 #!/bin/bash
-while [[ $1 == -* ]] ; do
-	if [[ $1 == -h || $1 == --help ]] ; then usage=y ; shift ; continue ; fi
-	if [[ $1 == -l ]] ; then list=y ; shift ; continue ; fi
-	if [[ $1 == -f ]] ; then filter=$2 ; shift 2 ; continue ; fi
-	if [[ $1 == -x ]] ; then cleanup=y ; shift ; continue ; fi
-	if [[ $1 == -n ]] ; then dryrun=y ; shift ; continue ; fi
-	if [[ $1 == -v ]] ; then verbose=y ; shift ; continue ; fi
-	if [[ $1 == -- ]] ; then shift ; break ; fi # treat all remaining args as path
-	echo "$(basename "$0"): unknown option $1 - exit" >&2 ; exit 1
+ffilter="grep -v -- -/" # default file filter skips files in directories with hard links
+
+args=("$@") ; parm=()
+for (( i=0; i<${#args[@]}; i++ )) ; do a=${args[i]} ; b=${args[i+1]}
+	if [[ $a == -- ]] ; then parm+=("${args[@]:i+1}") ; break ; fi # everything after -- are positional parameters
+
+	if [[ $a == -h || $a == --help ]] ; then usage=y ; continue ; fi
+	if [[ $a == -l ]] ; then list=y ; continue ; fi
+	if [[ $a == -a ]] ; then ffilter="cat" ; continue ; fi # no filter, just copy stdin to stdout
+	if [[ $a == -f ]] ; then filter=$b ; ((++i)) ; continue ; fi
+	if [[ $a == -d ]] ; then cleanup=y ; continue ; fi
+	if [[ $a == -n ]] ; then dryrun=y ; continue ; fi
+	if [[ $a == -v ]] ; then verbose=y ; continue ; fi
+
+	if [[ $a == -* ]] ; then echo "illegal option: $a" ; usage=y ; break ; fi
+	parm+=("$a")
 done
+set -- "${parm[@]}" ; unset args parm
+#set -u # from this point downwards, let script exit if an unsed variable is used (at runtime)
+
 if [[ -z $list && -z $cleanup && -z $dryrun ]] ; then usage=y ; fi
-if [[ -n $dryrun ]] ; then cleanup= ; verbose= ; fi # dryrun (-n) has preference over cleanup (-x) and dryrun has its own verbose
+if [[ -n $dryrun ]] ; then cleanup= ; verbose= ; fi # dryrun (-n) has preference over cleanup (-d) and dryrun has its own verbose
 if [[ -n $usage ]] ; then
-	echo "usage: $(basename "$0") [-l | -x | -n] [-f regex] [-v] [--] path [...]" >&2
+	echo "usage: $(basename "$0") [-l | -d | -n] [-a] [-f regex] [-v] [--] path [...]" >&2
 	echo "       -l : lists the extended attributes found in path(s) except those listed in xattrs.lst" >&2
+	echo "       -d : deletes all extended attributes found in path(s) except those listed in xattrs.lst" >&2
+	echo "       -n : dry-run: lists all attributes that would be removed, on all files concerned, supersedes -d" >&2
+	echo "       -a : also descend into directories with hardlinked files (*-/*). by default, these are skipped" >&2
+	echo "            because attrs on hardlinked files need to be processed (deleted) only once" >&2
 	echo "       -f regex : filter extended attributes with regex - only matched attributes will be processed" >&2
-	echo "       -x : removes all extended attributes found in path(s) except those listed in xattrs.lst" >&2
-	echo "       -n : dry-run: lists all attributes that would be removed, on all files concerned" >&2
-	echo "       -v : verbose: lists all attributes on all files concerned (-l, -x)" >&2
+	echo "       -v : verbose: lists all attributes on all files concerned (-l, -d)" >&2
 	exit 1
 fi
 
 if [[ -n $cleanup ]] ; then msg="removing all attributes" ; else msg="scanning for attribute" ; fi
-attrlist=$(getfattr -R -m ".*" --absolute-names "$@" | grep -v '^#' | grep -v '^$' | grep -v -f xattrs.lst | grep -vF user.DosStream.AFP_AfpInfo | grep "$filter" | sort -u) # note: if $filter is empty, grep "" does not filter anything, which is exactly what we want
+tmp=$(mktemp) ; grep -v ^# xattrs.lst > $tmp
+attrlist=$(getfattr -R -m ".*" --absolute-names "$@" | grep -v '^#' | grep -v '^$' | grep -v -f $tmp | grep -vF user.DosStream.AFP_AfpInfo | grep -- "$filter" | $ffilter | sort -u) # note: if $filter is empty, grep "" does not filter anything, which is exactly what we want
+rm -f $tmp
 if [[ -n $list ]] ; then
 	echo "$attrlist"
 fi
 if [[ -n $attrlist && ( -n $cleanup || -n $dryrun || ( -n $list && -n $verbose ) ) ]] ; then
 	echo "$attrlist" | while read a ; do
 		echo "->> $msg '$a' in $@"
-		find_attr "${a%:\$DATA}" "$@" | while read f ; do
+		find_attr "${a%:\$DATA}" "$@" | $ffilter | while read f ; do
 			if [[ -n $cleanup ]] ; then
 				if [[ -n $verbose ]] ; then echo "removing $a on $f" ; fi
 				sudo setfattr -x "$a" "$f"
