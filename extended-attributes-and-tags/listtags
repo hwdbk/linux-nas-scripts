@@ -25,6 +25,6 @@ for n in "$@" ; do
 		if [[ -n $all || -d $f || ( -f $f && $f != *-/* ) ]] ; then # filter files: exclude files (but not directories)  with tag(s), found within linked directories (i.e. directories whose name end with -)
 			echo "$f"
 		fi
-	done | xargs -d '\n' tag -lnG # default output (-lnG) is: name\ttag1,tag2...\n
+	done | xargs -d '\n' -r tag -lnG # default output (-lnG) is: name\ttag1,tag2...\n
 done
 #EOF
