@@ -73,6 +73,7 @@ while IFS=$'\t' read a b f ; do
 	fi
 	if [[ -n $c ]] ; then echo -e "${a:0:25}\t$b\t$c\t$f" ; else echo "WARNING: there was an error calculating md5sum for $f" >&2 ; fi
 done < <(find "$@" \( -type f -o -type d \) "${filter[@]}" ! -path "*/@eaDir/*" ! -path "*/.AppleDB/*" ! -name ".DS_Store" -printf "%TY%Tm%Td_%TH%TM%TS\t%s\t%p\n" | sort -t $'\t' -k 3 ) # filter out @eaDir on synology (does no harm on regular linux)
+# note: because of the sort, the file list, sizes and timestamps are calculated up front and by the time the file gets scanned, it may have been replaced, modified or disappeared
 
 # print stats
 if [[ -n $prevmd5 ]] ; then
