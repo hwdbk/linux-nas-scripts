@@ -9,8 +9,10 @@
 # note: does not assume that file_with_linked_filepaths_list is sorted - this script will sort this list because we use diff to match with the files found in dir
 #
 # check parameters
-if [[ $# == 0 ]] ; then echo "usage: cleanup_links [-n] [-d] [-t trash_dir] dir_with_links [dir ...] file_with_linked_filepaths_list" >&2 ; exit 1 ; fi
-if [[ $1 == -n ]] ; then dryrun=y ; echo "cleanup_links >>> DRYRUN/DEBUG mode <<<" ; shift ; fi
+dryrun= ; force= ; cleanupdirs= ; trash=
+if [[ $# == 0 ]] ; then echo "usage: cleanup_links [-n] [-f] [-d] [-t trash_dir] dir_with_links [dir ...] file_with_linked_filepaths_list" >&2 ; exit 1 ; fi
+if [[ $1 == -n ]] ; then dryrun=-n ; echo "cleanup_links >>> DRYRUN/DEBUG mode <<<" ; shift ; fi
+if [[ $1 == -f ]] ; then force=-f ; shift ; fi
 if [[ $1 == -d ]] ; then cleanupdirs=y ; shift ; fi
 if [[ $1 == -t ]] ; then if [[ -d "$2" ]] ; then trash=$2 ; shift 2 ; else echo "illegal option: $1 $2" >&2 ; exit 1 ; fi ; fi
 dir=("${@:1:$#-1}") # list of arguments except the last - source directories to scan
@@ -47,7 +49,7 @@ diff $tmp1 $tmp2 | grep '^>' | sed -e 's/^> //' | while read i ; do
 	elif [[ -h $i ]] ; then # need to check for symlinks first, because a symlink also tests as a file (-f)
 		if [[ -z $dryrun ]] ; then rm -v "$i" ; else echo "removing symlink $i" ; fi
 	elif [[ -f $i ]] ; then # it is a file, but not a symlink
-		if [[ -z $dryrun ]] ; then rm_with_ea "$i" ; else echo "unlinking $i" ; fi
+		if [[ -z $dryrun ]] ; then rm_with_ea $force "$i" ; else echo "unlinking $i" ; fi
 	else
 		echo "can not remove $i: not found"
 	fi
