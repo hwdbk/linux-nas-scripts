@@ -18,7 +18,9 @@ generate_script() {
 	echo '#EOF' >> $3
 }
 
-# generate translation table
+# Generate translation table. Linux uses NFC UTF-8; Mac uses NFD UTF-8 (called UTF-8-MAC in iconv)
+# Or, to be more precise, Linux filesystems generally preserve whatever Unicode normalization you give them (often NFC in practice),
+# while macOS has historically normalized filenames to an Apple-specific decomposed form resembling NFD.
 iconv -f UTF-8 -t UTF-8-MAC utf-8_linux.txt > utf-8_mac.txt
 if (( $(wc -l < utf-8_mac.txt) != $(wc -l < utf-8_linux.txt) )) ; then echo "line count mismatch in utf-8_mac.txt" >&2 ; exit 1 ; fi
 
